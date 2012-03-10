@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="processing-1.3.6-api.js"></script>
+  <title>Abstract Art </title>
+  
+  <meta property="og:title" content="Peter M Cottle.com"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="http://www.petercottle.com/experiment/abstractArt.html"/>
+<meta property="og:image" content="http://www.petercottle.com/experiment/Capture.PNG"/>
+<meta property="og:site_name" content="PeterMCottle.com"/>
+<meta property="og:description" content="Messing around with processing.js"/>
+
+
+  
+  
+<body>
+<h2>Messing Around</h2>
+<p>
+Click the mouse and move it around to paint!
+</p>
+<link href="style.css" rel="stylesheet" type="text/css"/>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+<script type="text/javascript">
+
+$j = jQuery.noConflict();
+
+function Point(x,y) {
+    this.x = x;
+    this.y = y;
+    
+    this.strokeWidth = 1;
+    this.lastTimePressed = new Date();
+    this.strokeWidthMax = 1;
+    
+    this.vx = 0;
+    this.vy = 0;
+    
+    this.pastx = x;
+    this.pasty = y;
+}
+
+Point.prototype.draw = function() {
+
+    p.colorMode(p.HSB);
+    
+    p.strokeWeight(this.strokeWidth);
+    
+    p.stroke(p.map(p.atan2(this.vx,this.vy),-p.PI,p.PI,0,255),255,Math.sqrt(this.vx*this.vx + this.vy*this.vy)*50);
+    p.line(this.x,this.y,this.pastx,this.pasty);
+}
+
+Point.prototype.jitter = function() {
+    this.x += p.random(-4,4);
+    this.y += p.random(-5,5);
+}
+
+Point.prototype.attract = function() {
+    var dx = p.mouseX - this.x;
+    var dy = p.mouseY - this.y;
+    
+    this.vx += dx * 0.0001 - this.vx * this.vx * 0.0005;
+    this.vy += dy * 0.0001 - this.vy * this.vy * 0.0005;
+    
+    this.pastx = this.x;
+    this.pasty = this.y;
+    
+    this.x += this.vx;
+    this.y += this.vy;
+
+}
+
+Point.prototype.frame = function() {
+    if(p.__mousePressed)
+    {
+        this.jitter();
+        this.strokeWidth += 1;
+        this.lastTimePressed = new Date();
+        this.strokeWidthMax = this.strokeWidth;
+    }
+    else
+    {
+        var now = new Date();
+        var deltaT = this.lastTimePressed.getTime() - now.getTime();
+        //exponentially decrease stroke width
+        this.strokeWidth = this.strokeWidthMax * Math.exp(deltaT / 1000);
+        if(this.strokeWidth < 0.1)
+        {
+            this.strokeWidth = 1;
+        }
+        
+    }
+    this.attract();
+    this.draw();
+}
+
+allPoints = [];
+
+
+function sketchProc(processing) {
+  // Override draw function, by default it will be called 60 times per second
+    processing.draw = function() {
+        // erase background
+        
+        processing.strokeWeight(2);
+        processing.point(5,5);
+        
+        for(var i = 0; i < allPoints.length; i++)
+        {
+            allPoints[i].frame(processing);
+        }
+    };
+    
+    processing.setup = function() {
+        processing.width = 800;
+        processing.height = 600;
+        processing.background(224)
+    }
+    
+    processing.mouseClicked = function() {
+        console.log(p.mouseX);
+    }
+}
+// attaching the sketchProc function to the canvas
+
+var canvas;
+var p;
+
+$j(document).ready(function(){
+    canvas = document.getElementById("canvas1");
+    p = new Processing(canvas, sketchProc);
+    
+    //$j("#canvas1").click(onClick);
+    for(var i = 0; i < 10; i++)
+    {
+        var point = new Point(p.random() * p.width, p.random() * p.height);
+        allPoints.push(point);
+    }
+    
+});
+
+
+</script>
+<div style="text-align:center;">
+<canvas id="canvas1" width="600" height="800"></canvas></p>
+</div>
+</body>
+</html>
